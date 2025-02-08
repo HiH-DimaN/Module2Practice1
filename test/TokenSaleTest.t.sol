@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "src/MyToken.sol";
 import "src/TokenSale.sol";
 import "src/Vault.sol";
-import "openzeppelin/token/ERC20/IERC20.sol";
+import "@openzeppelin/token/ERC20/IERC20.sol";
 
 /**
  * @title TokenSaleTest

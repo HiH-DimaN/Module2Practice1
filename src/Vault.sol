@@ -36,7 +36,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
      * @param token Адрес токена
      * @param amount Сумма депозита
      */
-    function deposit(IERC20 token, uint256 amount) external {
+    function deposit(IERC20 token, uint256 amount) external payable {
         token.safeTransferFrom(msg.sender, address(this), amount); // Получаем токены от пользователя
         _mint(msg.sender, nextTokenId); // Минтим NFT пользователю
         deposits[nextTokenId] = amount; // Записываем сумму депозита

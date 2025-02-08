@@ -3,10 +3,9 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "MyToken.sol"; // Импорт контракта ERC20-токена
-import "Vault.sol"; // Импорт контракта хранилища
+import "src/MyToken.sol"; // Импорт контракта ERC20-токена
+import "src/Vault.sol"; // Импорт контракта хранилища
 
 /**
  * @title TokenSale - Контракт продажи myToken с белым списком и комиссией
@@ -25,7 +24,7 @@ contract TokenSale is Ownable {
      * @param _myToken Адрес контракта myToken
      * @param _vault Адрес контракта Vault
      */
-    constructor(address _myToken, address _vault) {
+    constructor(address _myToken, address _vault) Ownable(msg.sender) {
         myToken = MyToken(_myToken); // Сохраняем адрес контракта токена
         vault = Vault(_vault); // Сохраняем адрес контракта хранилища
     }
