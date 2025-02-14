@@ -14,7 +14,7 @@ contract MyToken is ERC20, AccessControl {
      * @dev Конструктор, создающий токен с названием MyToken и тикером MTK
      */
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender); // Назначаем администратора
+        grantRole(DEFAULT_ADMIN_ROLE, msg.sender); // Назначаем администратора
     }
 
     /**
