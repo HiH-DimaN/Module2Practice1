@@ -17,13 +17,15 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
     uint256 public nextTokenId; // ID следующего NFT
     mapping(uint256 => uint256) public deposits; // Хранение суммы депозита по NFT
     mapping(uint256 => bool) public isETHDeposit; // Флаг, является ли депозит ETH
+    mapping(address => bool) public allowedTokens; // Разрешенные токены
+     mapping(uint256 => address) public depositToken; // Хранение токена депозита по NFT
     address public tokenSale; // Контракт продажи токенов
 
     event TokenSaleUpdated(address indexed newTokenSale); // Событие обновления TokenSale
+    event TokenAllowed(address indexed token, bool allowed); // Событие изменения статуса разрешенного токена
     event Deposit(address indexed user, address indexed token, uint256 amount, uint256 tokenId); // Депозит (ERC20)
     event DepositETH(address indexed user, uint256 amount, uint256 tokenId); // Депозит ETH
-    event Withdraw(address indexed user, address indexed token, uint256 amount, uint256 bonus, uint256 tokenId); // Вывод (ERC20)
-    event WithdrawETH(address indexed user, uint256 amount, uint256 bonus, uint256 tokenId); // Вывод ETH
+    event Withdraw(address indexed user, uint256 amount, uint256 bonus, uint256 tokenId); // Вывод 
 
     /**
      * @dev Конструктор, устанавливающий название и символ NFT
@@ -41,18 +43,32 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
     }
 
     /**
+     * @dev Добавляет или удаляет токен из списка разрешенных
+     * @param token Адрес токена
+     * @param allowed Статус разрешения (true/false)
+     */
+    function setAllowedToken(address token, bool allowed) external onlyOwner {
+        require(token != address(0), "Invalid token address"); // Проверяем, что адрес не нулевой
+        allowedTokens[token] = allowed; // Обновляем статус токена в маппинге
+        emit TokenAllowed(token, allowed); // Вызываем событие
+    }
+
+    /**
      * @dev Функция депозита в Vault (ERC20)
      * @param token Адрес токена
      * @param amount Сумма депозита
      */
     function deposit(IERC20 token, uint256 amount) external {
         require(amount > 0, "Amount must be greater than 0"); // Проверяем сумму
+        require(allowedTokens[address(token)], "Token not allowed"); // Проверяем, что токен разрешен
         token.safeTransferFrom(msg.sender, address(this), amount); // Получаем токены от пользователя
 
         _mint(msg.sender, nextTokenId); // Минтим NFT пользователю
         deposits[nextTokenId] = amount; // Записываем сумму депозита
-
         isETHDeposit[nextTokenId] = false; // Депозит не в ETH
+        depositToken[nextTokenId] = address(token); // Записываем адрес токена
+
+
         emit Deposit(msg.sender, address(token), amount, nextTokenId); // Логируем событие
         nextTokenId++; // Увеличиваем ID следующего NFT
     }
@@ -63,56 +79,50 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
     function depositETH() external payable nonReentrant {
         require(msg.value > 0, "Must send ETH"); // Проверяем, что отправлена ненулевая сумма
 
-        (bool success, ) = address(this).call{value: 0}(""); // Безопасный вызов call()
-        require(success, "Call failed"); // Проверяем успешность вызова
-
         _mint(msg.sender, nextTokenId); // Минтим NFT пользователю
         deposits[nextTokenId] = msg.value; // Записываем сумму депозита
+        isETHDeposit[nextTokenId] = true; // Указываем, что это ETH депозит
+
         emit DepositETH(msg.sender, msg.value, nextTokenId); // Логируем событие
         nextTokenId++; // Увеличиваем ID следующего NFT
     }
 
-    /**
-     * @dev Функция вывода депозита с NFT (ERC20)
-     * @param token Адрес токена
-     * @param tokenId ID NFT
-     */
-    function withdraw(IERC20 token, uint256 tokenId) external nonReentrant {
-        require(ownerOf(tokenId) == msg.sender, "Not NFT owner"); // Проверяем владельца NFT
-        require(!isETHDeposit[tokenId], "Use withdrawETH for ETH deposits"); // Проверяем, что это не ETH-депозит
-
-        uint256 amount = deposits[tokenId]; // Получаем сумму депозита
-        uint256 bonus = (amount * 2) / 100; // Вычисляем бонус 2%
-
-        delete deposits[tokenId]; // Удаляем данные о депозите
-        _burn(tokenId); // Сжигаем NFT
-        token.safeTransfer(msg.sender, amount + bonus); // Отправляем депозит и бонус
-
-        emit Withdraw(msg.sender, address(token), amount, bonus, tokenId); // Логируем событие
-    }
-
      /**
-     * @dev Функция вывода депозита с NFT (ETH)
+     * @dev Вывод средств с бонусом 2%
      * @param tokenId ID NFT
      */
-    function withdrawETH(uint256 tokenId) external nonReentrant {
+    function withdrawFunds(uint256 tokenId) external nonReentrant {
         require(ownerOf(tokenId) == msg.sender, "Not NFT owner"); // Проверяем владельца NFT
-        require(isETHDeposit[tokenId], "Use withdraw for ERC20 deposits"); // Проверяем, что это ETH-депозит
-
         uint256 amount = deposits[tokenId]; // Получаем сумму депозита
-        uint256 bonus = (amount * 2) / 100; // Вычисляем бонус 2%
+        require(amount > 0, "No funds to withdraw"); // Проверяем, что есть средства
 
-        delete deposits[tokenId]; // Удаляем данные о депозите
-        _burn(tokenId); // Сжигаем NFT
+        uint256 bonus = (amount * 2) / 100; // Рассчитываем бонус 2%
+        uint256 totalAmount = amount + bonus; // Итоговая сумма к выводу
+        
+        // Обновляем состояние до внешнего вызова
+        deposits[tokenId] = 0; // Обнуляем депозит перед выводом
+        _burn(tokenId); // Удаляем NFT после вывода средств
 
-        (bool success, ) = msg.sender.call{value: amount + bonus}(""); // Отправляем ETH пользователю
-        require(success, "ETH transfer failed"); // Проверяем успешность перевода
+        // Сначала обновляем состояние (deposits[tokenId] = 0 и _burn) перед отправкой средств
 
-         emit WithdrawETH(msg.sender, amount, bonus, tokenId); // Логируем событие
+        if (isETHDeposit[tokenId]) { // Проверка, если депозит был в ETH
+            // Отправляем ETH после обновления состояния
+            (bool successETH, ) = payable(msg.sender).call{value: totalAmount}(""); 
+            require(successETH, "ETH transfer failed"); // Проверяем успешность перевода ETH
+        } else { // Если депозит был в токенах
+            address token = depositToken[tokenId]; // Получаем адрес токена
+            require(token != address(0), "Invalid token"); // Проверяем, что токен существует
+            
+            // Вторая call-функция для перевода токенов через address
+            (bool successToken, ) = address(token).call(
+                abi.encodeWithSelector(IERC20(token).transfer.selector, msg.sender, totalAmount)
+            );
+            require(successToken, "Token transfer failed"); // Проверяем успешность перевода токенов
+        }
+
+        emit Withdraw(msg.sender, amount, bonus, tokenId); // Эмитируем событие вывода средств
     }
 
-    /**
-     * @dev Функция для получения ETH контрактом
-     */
+
     receive() external payable {}
 }
