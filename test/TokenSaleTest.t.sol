@@ -22,10 +22,10 @@ contract TokenSaleTest is Test {
     function setUp() public {
         // Разворачиваем контракты перед каждым тестом
         vault = new Vault(); // Создаем новый контракт Vault
-        myToken = new MyToken(); // Создаем новый контракт MyToken
-        mockToken = new ERC20("Mock Token", "MTK"); // Создаем мок-токен
+        myToken = new MyToken("MyToken", "MTK"); // Создаем новый контракт MyToken
+        mockToken = new MockToken(); // Создаем мок-токен
 
-        tokenSale = new TokenSale(address(myToken), address(vault)); // Создаем контракт TokenSale
+        tokenSale = new TokenSale(address(myToken), address payable(vault)); // Создаем контракт TokenSale
 
         // Раздаем токены пользователю и владельцу
         vm.deal(owner, 10 ether); // Даем владельцу эфир
