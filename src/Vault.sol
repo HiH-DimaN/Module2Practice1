@@ -108,7 +108,10 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
         _burn(tokenId); // Удаляем NFT после вывода средств
 
         if (isETHDeposit[tokenId]) { // Проверка, если депозит был в ETH
-            // Отправляем ETH после обновления состояния            
+            // Отправляем ETH после обновления состояния 
+            // Проверяем, что контракт имеет достаточно эфира
+            require(address(this).balance >= totalAmount, "Insufficient balance in contract");
+           
             (bool successETH, ) = payable(msg.sender).call{value: totalAmount}(""); 
             require(successETH, "ETH transfer failed"); // Проверяем успешность перевода ETH
         } else { // Если депозит был в токенах
