@@ -24,7 +24,7 @@ contract TokenSale is Ownable {
      * @param _myToken Адрес контракта myToken
      * @param _vault Адрес контракта Vault
      */
-    constructor(address _myToken, address _vault) Ownable(msg.sender) {
+    constructor(address _myToken, address payable _vault) Ownable(msg.sender) {
         myToken = MyToken(_myToken); // Сохраняем адрес контракта токена
         vault = Vault(_vault); // Сохраняем адрес контракта хранилища
     }
