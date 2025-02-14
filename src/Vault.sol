@@ -16,6 +16,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
 
     uint256 public nextTokenId; // ID следующего NFT
     mapping(uint256 => uint256) public deposits; // Хранение суммы депозита по NFT
+    mapping(uint256 => bool) public isETHDeposit; // Флаг, является ли депозит ETH
     address public tokenSale; // Контракт продажи токенов
 
     /**
@@ -32,7 +33,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
     }
 
     /**
-     * @dev Функция депозита в Vault
+     * @dev Функция депозита в Vault (ERC20)
      * @param token Адрес токена
      * @param amount Сумма депозита
      */
@@ -40,16 +41,34 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
         token.safeTransferFrom(msg.sender, address(this), amount); // Получаем токены от пользователя
         _mint(msg.sender, nextTokenId); // Минтим NFT пользователю
         deposits[nextTokenId] = amount; // Записываем сумму депозита
+        isETHDeposit[nextTokenId] = false; // Депозит не в ETH
         nextTokenId++; // Увеличиваем ID следующего NFT
     }
 
     /**
-     * @dev Функция вывода депозита с NFT
+     * @dev Функция депозита в Vault (ETH)
+     */
+    function depositETH() external payable nonReentrant {
+        require(msg.value > 0, "Must send ETH"); // Проверяем, что отправлена ненулевая сумма
+
+        (bool success, ) = address(this).call{value: 0}(""); // Безопасный вызов call()
+        require(success, "Call failed"); // Проверяем успешность вызова
+
+        _mint(msg.sender, nextTokenId); // Минтим NFT пользователю
+        deposits[nextTokenId] = msg.value; // Записываем сумму депозита
+        isETHDeposit[nextTokenId] = true; // Депозит в ETH
+        nextTokenId++; // Увеличиваем ID следующего NFT
+    }
+
+    /**
+     * @dev Функция вывода депозита с NFT (ERC20)
      * @param token Адрес токена
      * @param tokenId ID NFT
      */
     function withdraw(IERC20 token, uint256 tokenId) external nonReentrant {
         require(ownerOf(tokenId) == msg.sender, "Not NFT owner"); // Проверяем владельца NFT
+        require(!isETHDeposit[tokenId], "Use withdrawETH for ETH deposits"); // Проверяем, что это не ETH-депозит
+
         uint256 amount = deposits[tokenId]; // Получаем сумму депозита
         uint256 bonus = (amount * 2) / 100; // Вычисляем бонус 2%
 
@@ -57,4 +76,27 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
         _burn(tokenId); // Сжигаем NFT
         token.safeTransfer(msg.sender, amount + bonus); // Отправляем депозит и бонус
     }
+
+     /**
+     * @dev Функция вывода депозита с NFT (ETH)
+     * @param tokenId ID NFT
+     */
+    function withdrawETH(uint256 tokenId) external nonReentrant {
+        require(ownerOf(tokenId) == msg.sender, "Not NFT owner"); // Проверяем владельца NFT
+        require(isETHDeposit[tokenId], "Use withdraw for ERC20 deposits"); // Проверяем, что это ETH-депозит
+
+        uint256 amount = deposits[tokenId]; // Получаем сумму депозита
+        uint256 bonus = (amount * 2) / 100; // Вычисляем бонус 2%
+
+        delete deposits[tokenId]; // Удаляем данные о депозите
+        _burn(tokenId); // Сжигаем NFT
+
+        (bool success, ) = msg.sender.call{value: amount + bonus}(""); // Отправляем ETH пользователю
+        require(success, "ETH transfer failed"); // Проверяем успешность перевода
+    }
+
+    /**
+     * @dev Функция для получения ETH контрактом
+     */
+    receive() external payable {}
 }
