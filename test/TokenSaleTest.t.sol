@@ -25,7 +25,7 @@ contract TokenSaleTest is Test {
         myToken = new MyToken("MyToken", "MTK"); // Создаем новый контракт MyToken
         mockToken = new MockToken(); // Создаем мок-токен
 
-        tokenSale = new TokenSale(address(myToken), address payable(vault)); // Создаем контракт TokenSale
+        tokenSale = new TokenSale(address(myToken), address(vault)); // Создаем контракт TokenSale
 
         // Раздаем токены пользователю и владельцу
         vm.deal(owner, 10 ether); // Даем владельцу эфир
