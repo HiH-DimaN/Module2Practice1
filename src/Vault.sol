@@ -19,6 +19,12 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
     mapping(uint256 => bool) public isETHDeposit; // Флаг, является ли депозит ETH
     address public tokenSale; // Контракт продажи токенов
 
+    event TokenSaleUpdated(address indexed newTokenSale); // Событие обновления TokenSale
+    event Deposit(address indexed user, address indexed token, uint256 amount, uint256 tokenId); // Депозит (ERC20)
+    event DepositETH(address indexed user, uint256 amount, uint256 tokenId); // Депозит ETH
+    event Withdraw(address indexed user, address indexed token, uint256 amount, uint256 bonus, uint256 tokenId); // Вывод (ERC20)
+    event WithdrawETH(address indexed user, uint256 amount, uint256 bonus, uint256 tokenId); // Вывод ETH
+
     /**
      * @dev Конструктор, устанавливающий название и символ NFT
      */
@@ -29,7 +35,9 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
      * @param _tokenSale Адрес контракта TokenSale
      */
     function setTokenSale(address _tokenSale) external onlyOwner {
+        require(_tokenSale != address(0), "Invalid address"); // Проверяем, что адрес не нулевой
         tokenSale = _tokenSale; // Устанавливаем контракт TokenSale
+        emit TokenSaleUpdated(_tokenSale); // Вызываем событие обновления TokenSale
     }
 
     /**
@@ -38,10 +46,14 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
      * @param amount Сумма депозита
      */
     function deposit(IERC20 token, uint256 amount) external payable {
+        require(amount > 0, "Amount must be greater than 0"); // Проверяем сумму
         token.safeTransferFrom(msg.sender, address(this), amount); // Получаем токены от пользователя
+
         _mint(msg.sender, nextTokenId); // Минтим NFT пользователю
         deposits[nextTokenId] = amount; // Записываем сумму депозита
+
         isETHDeposit[nextTokenId] = false; // Депозит не в ETH
+        emit Deposit(msg.sender, address(token), amount, nextTokenId); // Логируем событие
         nextTokenId++; // Увеличиваем ID следующего NFT
     }
 
@@ -56,7 +68,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
 
         _mint(msg.sender, nextTokenId); // Минтим NFT пользователю
         deposits[nextTokenId] = msg.value; // Записываем сумму депозита
-        isETHDeposit[nextTokenId] = true; // Депозит в ETH
+        emit DepositETH(msg.sender, msg.value, nextTokenId); // Логируем событие
         nextTokenId++; // Увеличиваем ID следующего NFT
     }
 
@@ -75,6 +87,8 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
         delete deposits[tokenId]; // Удаляем данные о депозите
         _burn(tokenId); // Сжигаем NFT
         token.safeTransfer(msg.sender, amount + bonus); // Отправляем депозит и бонус
+
+        emit Withdraw(msg.sender, address(token), amount, bonus, tokenId); // Логируем событие
     }
 
      /**
@@ -93,6 +107,8 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
 
         (bool success, ) = msg.sender.call{value: amount + bonus}(""); // Отправляем ETH пользователю
         require(success, "ETH transfer failed"); // Проверяем успешность перевода
+
+         emit WithdrawETH(msg.sender, amount, bonus, tokenId); // Логируем событие
     }
 
     /**
