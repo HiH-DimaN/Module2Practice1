@@ -45,7 +45,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
      * @param token Адрес токена
      * @param amount Сумма депозита
      */
-    function deposit(IERC20 token, uint256 amount) external payable {
+    function deposit(IERC20 token, uint256 amount) external {
         require(amount > 0, "Amount must be greater than 0"); // Проверяем сумму
         token.safeTransferFrom(msg.sender, address(this), amount); // Получаем токены от пользователя
 
