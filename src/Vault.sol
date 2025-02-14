@@ -119,8 +119,6 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
             address tokenForWithdrawal = depositToken[tokenId]; // Получаем токен для вывода
             require(tokenForWithdrawal == token, "Token mismatch"); // Проверяем совпадение токенов
 
-            _burn(tokenId); // Удаляем NFT после вывода средств
-
             // Вторая call-функция для перевода токенов через address
             (bool successToken, ) = address(tokenForWithdrawal).call(
                 abi.encodeWithSelector(IERC20(tokenForWithdrawal).transfer.selector, msg.sender, totalAmount)
