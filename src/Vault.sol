@@ -99,29 +99,33 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
         uint256 bonus = (amount * 2) / 100; // Рассчитываем бонус 2%
         uint256 totalAmount = amount + bonus; // Итоговая сумма к выводу
         
+        // Получаем токен, который был использован для депозита
+        address token = depositToken[tokenId];
+        require(token != address(0), "Invalid token"); // Проверяем, что токен существует
+
         // Обновляем состояние до внешнего вызова
         deposits[tokenId] = 0; // Обнуляем депозит перед выводом
         _burn(tokenId); // Удаляем NFT после вывода средств
-
-        // Сначала обновляем состояние (deposits[tokenId] = 0 и _burn) перед отправкой средств
 
         if (isETHDeposit[tokenId]) { // Проверка, если депозит был в ETH
             // Отправляем ETH после обновления состояния
             (bool successETH, ) = payable(msg.sender).call{value: totalAmount}(""); 
             require(successETH, "ETH transfer failed"); // Проверяем успешность перевода ETH
         } else { // Если депозит был в токенах
-            address token = depositToken[tokenId]; // Получаем адрес токена
-            require(token != address(0), "Invalid token"); // Проверяем, что токен существует
-            
+            // Проверяем, что токен для вывода совпадает с токеном, который был использован для депозита
+            address tokenForWithdrawal = depositToken[tokenId]; // Получаем токен для вывода
+            require(tokenForWithdrawal == token, "Token mismatch"); // Проверяем совпадение токенов
+
             // Вторая call-функция для перевода токенов через address
-            (bool successToken, ) = address(token).call(
-                abi.encodeWithSelector(IERC20(token).transfer.selector, msg.sender, totalAmount)
+            (bool successToken, ) = address(tokenForWithdrawal).call(
+                abi.encodeWithSelector(IERC20(tokenForWithdrawal).transfer.selector, msg.sender, totalAmount)
             );
             require(successToken, "Token transfer failed"); // Проверяем успешность перевода токенов
         }
 
         emit Withdraw(msg.sender, amount, bonus, tokenId); // Эмитируем событие вывода средств
     }
+
 
 
     receive() external payable {}
