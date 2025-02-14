@@ -44,8 +44,10 @@ contract TokenSale is Ownable {
      */
     function buyWithToken(uint256 amount, IERC20 paymentToken) external {
         require(whiteList[address(paymentToken)], "Token not whitelisted"); // Проверяем whitelisted
+
         uint256 fee = (amount * FEE_PERCENT * 100) / 10000; // Вычисляем комиссию
         uint256 totalCost = amount + fee; // Общая сумма покупки
+
         paymentToken.safeTransferFrom(msg.sender, address(this), totalCost); // Получаем оплату
         paymentToken.safeTransfer(address(vault), fee); // Отправляем комиссию в Vault
         myToken.mint(msg.sender, amount); // Минтим myToken пользователю
@@ -57,7 +59,16 @@ contract TokenSale is Ownable {
     function buyWithETH() external payable {
         uint256 amount = (msg.value / ETH_RATE); // Рассчитываем myToken
         uint256 fee = (amount * FEE_PERCENT * 100) / 10000; // Вычисляем комиссию
-        vault.deposit{value: fee}(IERC20(address(0)), fee); // Переводим комиссию в Vault
+
+        // Отправляем комиссию прямо в Vault
+        payable(address(vault)).transfer(fee); // Переводим эфир в Vault
         myToken.mint(msg.sender, amount); // Минтим myToken
+    }
+
+    /**
+     * @dev Функция для приема эфира в контракт
+     */
+    receive() external payable {
+        // Можно добавить логирование или другие действия по мере необходимости
     }
 }
