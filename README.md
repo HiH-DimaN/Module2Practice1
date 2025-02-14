@@ -42,6 +42,7 @@
 ## Развертывание через Foundry
 ```sh
 forge install openzeppelin/contracts
+forge install foundry-rs/forge-std
 forge build
 forge test
 ```
