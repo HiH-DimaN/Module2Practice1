@@ -18,7 +18,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
     mapping(uint256 => uint256) public deposits; // Хранение суммы депозита по NFT
     mapping(uint256 => bool) public isETHDeposit; // Флаг, является ли депозит ETH
     mapping(address => bool) public allowedTokens; // Разрешенные токены
-     mapping(uint256 => address) public depositToken; // Хранение токена депозита по NFT
+    mapping(uint256 => address) public depositToken; // Хранение токена депозита по NFT
     address public tokenSale; // Контракт продажи токенов
 
     event TokenSaleUpdated(address indexed newTokenSale); // Событие обновления TokenSale
@@ -101,7 +101,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
         
         // Получаем токен, который был использован для депозита
         address token = depositToken[tokenId];
-        require(token != address(0), "Invalid token"); // Проверяем, что токен существует
+        require(token != address(0), "Invalid token"); // Проверяем, что токен существует 
 
         // Обновляем состояние до внешнего вызова
         deposits[tokenId] = 0; // Обнуляем депозит перед выводом
@@ -112,7 +112,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
             // Проверяем, что контракт имеет достаточно эфира
             require(address(this).balance >= totalAmount, "Insufficient balance in contract");
            
-            (bool successETH, ) = payable(msg.sender).call{value: totalAmount}(""); 
+            (bool successETH, ) = (msg.sender).call{value: totalAmount}(""); 
             require(successETH, "ETH transfer failed"); // Проверяем успешность перевода ETH
         } else { // Если депозит был в токенах
             // Проверяем, что токен для вывода совпадает с токеном, который был использован для депозита
