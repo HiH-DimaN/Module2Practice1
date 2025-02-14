@@ -96,7 +96,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
         uint256 amount = deposits[tokenId]; // Получаем сумму депозита
         require(amount > 0, "No funds to withdraw"); // Проверяем, что есть средства
 
-        uint256 bonus = (amount * 2) / 100; // Рассчитываем бонус 2%
+        uint256 bonus = (amount * 200) / 10000; // Рассчитываем бонус 2%
         uint256 totalAmount = amount + bonus; // Итоговая сумма к выводу
         
         // Получаем токен, который был использован для депозита
