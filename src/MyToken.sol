@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-
 
 /**
  * @title MyToken - Кастомный ERC20-токен протокола
@@ -17,7 +14,7 @@ contract MyToken is ERC20, AccessControl {
      * @dev Конструктор, создающий токен с названием MyToken и тикером MTK
      */
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); // Администратор
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender); // Назначаем администратора
     }
 
     /**
