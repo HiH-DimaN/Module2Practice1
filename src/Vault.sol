@@ -63,7 +63,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
         require(allowedTokens[address(token)], "Token not allowed"); // Проверяем, что токен разрешен
         token.safeTransferFrom(msg.sender, address(this), amount); // Получаем токены от пользователя
 
-        _mint(msg.sender, nextTokenId); // Минтим NFT пользователю
+        _safeMint(msg.sender, nextTokenId); // Минтим NFT пользователю с проверкой на возможность приема токенов
         deposits[nextTokenId] = amount; // Записываем сумму депозита
         isETHDeposit[nextTokenId] = false; // Депозит не в ETH
         depositToken[nextTokenId] = address(token); // Записываем адрес токена
@@ -79,7 +79,7 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
     function depositETH() external payable nonReentrant {
         require(msg.value > 0, "Must send ETH"); // Проверяем, что отправлена ненулевая сумма
 
-        _mint(msg.sender, nextTokenId); // Минтим NFT пользователю
+        _safeMint(msg.sender, nextTokenId); // Минтим NFT пользователю с проверкой на возможность приема токенов
         deposits[nextTokenId] = msg.value; // Записываем сумму депозита
         isETHDeposit[nextTokenId] = true; // Указываем, что это ETH депозит
 
@@ -108,13 +108,15 @@ contract Vault is ReentrancyGuard, Ownable, ERC721 {
         _burn(tokenId); // Удаляем NFT после вывода средств
 
         if (isETHDeposit[tokenId]) { // Проверка, если депозит был в ETH
-            // Отправляем ETH после обновления состояния
+            // Отправляем ETH после обновления состояния            
             (bool successETH, ) = payable(msg.sender).call{value: totalAmount}(""); 
             require(successETH, "ETH transfer failed"); // Проверяем успешность перевода ETH
         } else { // Если депозит был в токенах
             // Проверяем, что токен для вывода совпадает с токеном, который был использован для депозита
             address tokenForWithdrawal = depositToken[tokenId]; // Получаем токен для вывода
             require(tokenForWithdrawal == token, "Token mismatch"); // Проверяем совпадение токенов
+
+            _burn(tokenId); // Удаляем NFT после вывода средств
 
             // Вторая call-функция для перевода токенов через address
             (bool successToken, ) = address(tokenForWithdrawal).call(
