@@ -52,7 +52,7 @@ contract TokenSale is Ownable {
         paymentToken.safeTransfer(address(vault), fee); // Отправляем комиссию в Vault
 
         // Минтим myToken для пользователя через роль MINTER_ROLE
-        myToken.mint(msg.sender, amount); // Минтим myToken пользователю
+        myToken.mint(msg.sender, amount); // Минтим myToken пользователю 
         
     }
 

@@ -28,16 +28,20 @@
 
 ## Функциональность
 ### `TokenSale.sol`
-- `buyWithToken(address token, uint256 amount)` – покупка myToken за ERC20.
+- `addToWhitelist(address token)` – добавляет токен в белый список.
+- `buyWithToken(uint256 amount, IERC20 paymentToken)` – покупка myToken за whitelisted токены.
 - `buyWithETH()` – покупка myToken за ETH.
-- `setWhitelist(address token, bool status)` – управление списком разрешенных токенов.
+- `receive()` - прием эфира в контракт.
 
 ### `Vault.sol`
-- `deposit(address token, uint256 amount)` – депозит в `Vault` с выпуском NFT.
-- `withdraw(uint256 tokenId)` – возврат депозита + 2% от комиссий.
+- `setTokenSale(address _tokenSale) ` - учиановка контракта продажи.
+- `setAllowedToken(address token, bool allowed)` - управление списком разрешенных токенов.
+- `deposit(IERC20 token, uint256 amount)` – депозит в `Vault`(ERC20) с выпуском NFT.
+- `depositETH()` - депозит в `Vault`(ETH) с выпуском NFT.
+- `withdrawFunds(uint256 tokenId)` – возврат депозита + 2% от комиссий.
 
 ### `MyToken.sol`
-- Обычный ERC20 с управляемыми параметрами (комиссия, адрес получателя комиссии и т. д.).
+- Обычный ERC20 с управляемыми параметрами (выпуск новых токенов с установкой роли минтера).
 
 ## Развертывание через Foundry
 ```sh
