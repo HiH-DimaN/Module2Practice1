@@ -10,11 +10,13 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 contract MyToken is ERC20, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+
     /**
      * @dev Конструктор, создающий токен с названием MyToken и тикером MTK
      */
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); 
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender); // Назначаем администратора
+        _grantRole(MINTER_ROLE, msg.sender); // Назначаем минтером создателя контракта
     }
 
     /**
@@ -28,7 +30,7 @@ contract MyToken is ERC20, AccessControl {
 
     // Функция для назначения роли минтера
     function setMinter(address minter) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        grantRole(MINTER_ROLE, minter);
+        _grantRole(MINTER_ROLE, minter);
     }
 }
 
